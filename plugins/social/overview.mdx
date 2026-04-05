@@ -1,0 +1,40 @@
+---
+title: "Social Plugins"
+description: "Connect external platforms like WakaTime, LeetCode, Stack Overflow, and more to your GitHub metrics"
+keywords: ["wakatime", "leetcode", "stackoverflow", "music", "anilist", "steam", "pagespeed", "rss", "social plugins"]
+---
+
+Social plugins connect third-party services to your GitHub metrics card, letting you surface activity from coding trackers, developer communities, music players, and more alongside your GitHub stats.
+
+<Note>
+Most social plugins require additional API tokens or credentials stored as GitHub secrets. Each plugin page explains what credentials are needed and how to obtain them.
+</Note>
+
+## Available plugins
+
+<CardGroup cols={2}>
+  <Card title="WakaTime" icon="clock" href="/plugins/social/wakatime">
+    Display coding time statistics broken down by project, language, editor, and OS.
+  </Card>
+  <Card title="LeetCode" icon="code" href="/plugins/social/leetcode">
+    Show your problem-solving stats, skill tags, and recent submissions from LeetCode.
+  </Card>
+  <Card title="Stack Overflow" icon="stack-overflow" href="/plugins/social/stackoverflow">
+    Display your reputation, top answers, and recent questions from Stack Overflow.
+  </Card>
+  <Card title="Music Activity" icon="music" href="/plugins/social/music">
+    Show recently played or top tracks from Spotify, Last.fm, Apple Music, or YouTube Music.
+  </Card>
+</CardGroup>
+
+## Other social plugins
+
+The following social plugins are also available in lowlighter/metrics but do not have dedicated pages in this documentation yet:
+
+- **AniList** (`plugin_anilist`) — Display your anime watch list and manga reading list from AniList
+- **Steam** (`plugin_steam`) — Show your Steam gaming activity, most played games, and achievements
+- **PageSpeed** (`plugin_pagespeed`) — Display Google PageSpeed Insights scores for any URL
+- **Posts** (`plugin_posts`) — Show recent posts from external sources like dev.to or Medium
+- **RSS** (`plugin_rss`) — Display recent entries from any RSS feed
+
+Refer to the [lowlighter/metrics repository](https://github.com/lowlighter/metrics) for full documentation on these plugins.

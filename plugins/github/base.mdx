@@ -1,0 +1,99 @@
+---
+title: "Base content"
+description: "Core GitHub profile stats included by default"
+---
+
+The base plugin provides the foundational sections of any metrics output. It is enabled automatically and does not require an explicit `plugin_NAME: true` flag. You configure it by selecting which sections to include and tuning the repository fetch behavior.
+
+## Sections
+
+The `base` option controls which sections appear in the output:
+
+| Section | Contents |
+|---|---|
+| `header` | Username, two-week commit calendar, and summary stats |
+| `activity` | Recent commits, pull requests, and issues |
+| `community` | Following, sponsors, and organization memberships |
+| `repositories` | Repository stats including stars, forks, and licenses |
+| `metadata` | Information about the generated metrics image |
+
+All five sections are enabled by default.
+
+## Options
+
+<ParamField path="base" type="string">
+  Comma-separated list of sections to include. Accepted values: `header`, `activity`, `community`, `repositories`, `metadata`. Defaults to all five sections.
+</ParamField>
+
+<ParamField path="base_indepth" type="boolean">
+  Enable indepth analysis mode. When enabled, additional API queries are made to improve the accuracy of total commits, issues, pull requests, pull request reviews, and repositories contributed to. Defaults to `false`.
+</ParamField>
+
+<ParamField path="base_hireable" type="boolean">
+  Display an "Available for hire!" badge in the header section. Reflects the hireable flag set on your GitHub profile. Defaults to `false`.
+</ParamField>
+
+<ParamField path="base_skip" type="boolean">
+  Skip base content entirely. Any plugin that depends on base data may break when this is enabled. Only use this with plugins configured with `token: NOT_NEEDED`. Defaults to `false`.
+</ParamField>
+
+<ParamField path="repositories" type="number">
+  Number of repositories to fetch. Higher values produce more accurate metrics but consume more API quota, especially when multiple plugins are active. Default: `100`.
+</ParamField>
+
+<ParamField path="repositories_batch" type="number">
+  Number of repositories fetched per GraphQL query (1–100). Reduce this value if you encounter `Something went wrong while executing your query` errors caused by API timeouts. Default: `100`.
+</ParamField>
+
+<ParamField path="repositories_forks" type="boolean">
+  Include forked repositories in stats. Defaults to `false`.
+</ParamField>
+
+<ParamField path="repositories_affiliations" type="string">
+  Comma-separated list of repository affiliations to include. Accepted values:
+  - `owner` — repositories you own
+  - `collaborator` — repositories you have push access to
+  - `organization_member` — repositories in organizations where you are a member
+
+  Set to `""` to fetch all repositories associated with the account. Default: `owner`.
+</ParamField>
+
+<ParamField path="repositories_skipped" type="string">
+  Newline-separated list of repositories to exclude globally. This is a global option inherited by plugins that support skipping repositories.
+</ParamField>
+
+<ParamField path="users_ignored" type="string">
+  Comma-separated list of users (or email addresses) to exclude from stats. Email-based matching applies only to commit-related elements. This is a global option. Default: `github-actions[bot], dependabot[bot], dependabot-preview[bot], actions-user, action@github.com`.
+</ParamField>
+
+<ParamField path="commits_authoring" type="string">
+  Comma-separated list of names, usernames, or email addresses used to identify your commits across repositories. Used by plugins that need to attribute commits to you. Defaults to your GitHub username.
+</ParamField>
+
+## Workflow example
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.base.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: header, activity, community, repositories, metadata
+    base_indepth: yes
+    base_hireable: yes
+    repositories: 100
+    repositories_forks: no
+    repositories_affiliations: owner, collaborator
+    repositories_skipped: |
+      my-org/private-repo
+      my-org/another-repo
+    users_ignored: dependabot[bot]
+    commits_authoring: my-username, me@example.com
+```
+
+<Note>
+  `base_indepth` consumes significantly more GitHub API quota. On web instances, `metrics.api.github.overuse` must be enabled in `settings.json`.
+</Note>
+
+<Warning>
+  Using `base_skip: yes` will break any plugin that reads base content data. Only use it when running a plugin that explicitly supports `token: NOT_NEEDED`.
+</Warning>

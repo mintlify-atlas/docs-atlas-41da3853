@@ -1,0 +1,96 @@
+---
+title: "GitHub Plugins"
+description: "30+ plugins to display GitHub stats in your metrics"
+---
+
+GitHub plugins extend your metrics with rich, customizable data pulled directly from the GitHub API. Each plugin focuses on a specific category of information and can be combined freely in a single workflow.
+
+## Enabling plugins
+
+Enable any plugin by adding `plugin_NAME: true` to your workflow step's `with` block:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    plugin_languages: yes
+    plugin_achievements: yes
+    plugin_activity: yes
+```
+
+Multiple plugins can be active in the same workflow run. Each enabled plugin appends its section to the generated metrics image.
+
+## Plugin ordering
+
+Use `config_order` to control the sequence in which plugin sections appear in the output:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    plugin_languages: yes
+    plugin_habits: yes
+    plugin_achievements: yes
+    config_order: languages, habits, achievements
+```
+
+Plugins not listed in `config_order` are appended after the explicitly ordered ones.
+
+## Available GitHub plugins
+
+<CardGroup cols={2}>
+  <Card title="Base content" icon="database" href="/plugins/github/base">
+    Core GitHub profile stats shown by default: header, activity, community, repositories, and metadata sections.
+  </Card>
+  <Card title="Languages activity" icon="code" href="/plugins/github/languages">
+    Display programming language usage across all repositories you contributed to.
+  </Card>
+  <Card title="Achievements" icon="trophy" href="/plugins/github/achievements">
+    Unlocked GitHub achievements and badges, with configurable rank filtering and display styles.
+  </Card>
+  <Card title="Recent activity" icon="activity" href="/plugins/github/activity">
+    A feed of recent GitHub events including commits, pull requests, issues, releases, and more.
+  </Card>
+  <Card title="Coding habits" icon="clock" href="/plugins/github/habits">
+    Visualize coding patterns, peak hours, and most frequently used languages based on recent activity.
+  </Card>
+  <Card title="Featured repositories" icon="bookmark" href="/plugins/github/repositories">
+    Highlight hand-picked, pinned, or most-starred repositories in your metrics.
+  </Card>
+</CardGroup>
+
+## Additional GitHub plugins
+
+The following plugins are also maintained by the core team. Documentation pages are not yet available for these — refer to the [source README](https://github.com/lowlighter/metrics/tree/master/source/plugins) for details.
+
+<AccordionGroup>
+  <Accordion title="Calendar and commit history">
+    - **Commit calendar** (`calendar`) — Full-year commit calendar
+    - **Isometric commit calendar** (`isocalendar`) — 3D isometric calendar view
+    - **Lines of code changed** (`lines`) — Total lines added and removed
+  </Accordion>
+  <Accordion title="Social and community">
+    - **Introduction** (`introduction`) — Profile or repository introduction
+    - **People** (`people`) — Followers, following, and contributors
+    - **GitHub Sponsors** (`sponsors`) — Sponsor listing and tiers
+    - **GitHub Sponsorships** (`sponsorships`) — Repositories you sponsor
+    - **Notable contributions** (`notable`) — Contributions to notable repositories
+  </Accordion>
+  <Accordion title="Repository insights">
+    - **Repository contributors** (`contributors`) — Contributor stats per repository
+    - **Repository licenses** (`licenses`) — License breakdown across repositories
+    - **Repository traffic** (`traffic`) — View and clone statistics
+    - **GitHub projects** (`projects`) — Active GitHub project boards
+    - **Gists** (`gists`) — Public gist statistics
+    - **Starred topics** (`topics`) — Pinned and starred GitHub topics
+    - **Recently starred repositories** (`stars`) — Latest starred repos
+    - **Star lists** (`starlists`) — Repositories from your star lists
+  </Accordion>
+  <Accordion title="Activity and engagement">
+    - **Discussions** (`discussions`) — Discussion participation stats
+    - **Follow-up of issues and pull requests** (`followup`) — Open issues and PR tracking
+    - **Comment reactions** (`reactions`) — Reactions received on comments
+    - **Random code snippet** (`code`) — A random snippet from recent activity
+    - **GitHub Skyline** (`skyline`) — 3D Skyline contribution model
+  </Accordion>
+</AccordionGroup>

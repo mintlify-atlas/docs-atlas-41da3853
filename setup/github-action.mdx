@@ -1,0 +1,324 @@
+---
+title: "GitHub Action setup"
+description: "Comprehensive guide to using Metrics as a GitHub Action, including all key inputs, output options, and workflow examples."
+keywords: ["github action", "metrics", "workflow", "yaml", "setup", "configuration", "plugins"]
+---
+
+The GitHub Action is the primary and most feature-complete way to use Metrics. It runs on a schedule inside your GitHub repository, generates a metrics image, and commits it back automatically.
+
+## How it works
+
+When the action runs, it:
+
+1. Reads your workflow inputs as configuration
+2. Authenticates with the GitHub API using your token
+3. Fetches data for the base content and any enabled plugins
+4. Renders the output as SVG (or another configured format)
+5. Commits the result to your repository (or another configured destination)
+
+The action uses a pre-built Docker image from the GitHub Container Registry by default. You can pin to a specific version or build from source if needed.
+
+## Prerequisites
+
+- A GitHub repository (usually your profile repository, `username/username`)
+- A GitHub Personal Access Token stored as the `METRICS_TOKEN` repository secret
+
+See the [quickstart](/quickstart) for instructions on creating the token and secret.
+
+## Minimal workflow
+
+```yaml
+name: Metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+```
+
+This runs daily, generates `github-metrics.svg`, and commits it to the default branch of your repository.
+
+## Key inputs
+
+### Authentication
+
+<ParamField body="token" type="string" required>
+  GitHub Personal Access Token used to fetch data from the GitHub API. Store this as a repository secret and reference it as `${{ secrets.METRICS_TOKEN }}`. The required scopes depend on the plugins you enable; `read:user` and `repo` cover most use cases.
+</ParamField>
+
+<ParamField body="committer_token" type="string" default="${{ github.token }}">
+  GitHub token used to commit the generated metrics file back to the repository. Defaults to the built-in `GITHUB_TOKEN`, which is sufficient for committing to the same repository. Use a PAT if you need to commit to a different repository or trigger further workflows.
+</ParamField>
+
+### Target
+
+<ParamField body="user" type="string">
+  GitHub username to generate metrics for. Defaults to the owner of the repository where the action runs.
+</ParamField>
+
+<ParamField body="repo" type="string">
+  GitHub repository name to generate repository-level metrics for. When set, the action uses the `repository` template by default.
+</ParamField>
+
+### Output
+
+<ParamField body="filename" type="string" default="github-metrics.*">
+  Path and filename for the generated output file. The file extension is determined by the output format. You can use a path like `images/metrics.svg` to commit to a subdirectory.
+</ParamField>
+
+<ParamField body="output_action" type="string" default="commit">
+  What to do with the generated output. Accepted values:
+
+  - `commit` — commit the file to the repository (default)
+  - `gist` — upload the file to a GitHub Gist (requires `committer_gist`)
+  - `pull-request` — open a pull request with the changes
+  - `pull-request-merge` — open and merge a pull request (merge commit)
+  - `pull-request-squash` — open and squash-merge a pull request
+  - `pull-request-rebase` — open and rebase-merge a pull request
+  - `none` — skip the output step entirely (useful when combined with other steps)
+</ParamField>
+
+<ParamField body="committer_branch" type="string">
+  Target branch to commit the generated file to. Defaults to the repository's default branch.
+</ParamField>
+
+<ParamField body="committer_message" type="string">
+  Commit message for the generated file. Defaults to a standard message like `Update metrics`.
+</ParamField>
+
+<ParamField body="committer_gist" type="string">
+  Gist ID to upload the output to when `output_action` is set to `gist`. The gist must already exist and be owned by the account associated with `committer_token`.
+</ParamField>
+
+### Appearance
+
+<ParamField body="template" type="string" default="classic">
+  Template to use for rendering. Built-in options include:
+
+  - `classic` — standard card layout
+  - `repository` — optimized for repository metrics
+  - `terminal` — terminal-style dark layout
+  - `markdown` — renders to a Markdown file instead of SVG
+  - `community` — load a community-maintained template
+</ParamField>
+
+<ParamField body="config_timezone" type="string">
+  Timezone for date-based calculations (e.g., `America/New_York`, `Europe/Paris`). Defaults to UTC if not set.
+</ParamField>
+
+<ParamField body="config_output" type="string" default="svg">
+  Output format. Accepted values: `svg`, `png`, `jpeg`, `json`, `markdown`, `markdown-pdf`, `insights`.
+</ParamField>
+
+<ParamField body="config_animations" type="boolean" default="true">
+  Whether to include CSS animations in SVG output. Disable for static images.
+</ParamField>
+
+<ParamField body="config_padding" type="string">
+  Padding around the rendered image, specified as a CSS-style value. Example: `"10"` or `"0, 8 + 11%"`.
+</ParamField>
+
+### Performance
+
+<ParamField body="use_prebuilt_image" type="string" default="yes">
+  Use the pre-built Docker image from the GitHub Container Registry instead of building from source. Significantly reduces workflow run time. Set to `no` to build the image locally (useful when testing unreleased changes).
+</ParamField>
+
+<ParamField body="optimize" type="string">
+  Optimization features to enable. Accepts a comma-separated list. Common values: `css`, `xml`, `svg`.
+</ParamField>
+
+<ParamField body="retries" type="number" default="3">
+  Number of retry attempts if rendering fails.
+</ParamField>
+
+<ParamField body="retries_delay" type="number" default="300">
+  Delay in seconds between retry attempts.
+</ParamField>
+
+## Scheduling
+
+Use a cron expression in the `on.schedule` trigger to control how often metrics are updated. GitHub Actions supports standard 5-field cron syntax.
+
+Common schedules:
+
+```yaml
+on:
+  schedule:
+    # Every day at midnight UTC
+    - cron: "0 0 * * *"
+
+    # Every 6 hours
+    - cron: "0 */6 * * *"
+
+    # Every Monday at 9am UTC
+    - cron: "0 9 * * 1"
+```
+
+<Note>
+  GitHub Actions schedule events may be delayed by up to a few minutes during periods of high load. The `workflow_dispatch` trigger is useful for manual runs.
+</Note>
+
+## Workflow examples
+
+### Basic workflow with language stats and achievements
+
+```yaml
+name: Metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          plugin_languages: yes
+          plugin_languages_analysis_timeout: 15
+          plugin_achievements: yes
+```
+
+### Output to a Gist
+
+```yaml
+name: Metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          output_action: gist
+          committer_gist: <your-gist-id>
+          committer_token: ${{ secrets.GIST_TOKEN }}
+```
+
+Replace `<your-gist-id>` with the ID of an existing Gist. The `GIST_TOKEN` secret must be a PAT with the `gist` scope.
+
+### Multiple outputs in a single workflow
+
+You can include multiple steps in one job to generate several images with different configurations:
+
+```yaml
+name: Metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Classic metrics
+        uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          filename: metrics.classic.svg
+
+      - name: Terminal metrics
+        uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          filename: metrics.terminal.svg
+          template: terminal
+```
+
+### Repository metrics
+
+```yaml
+name: Metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          template: repository
+          repo: my-repository
+          plugin_lines: yes
+          plugin_contributors: yes
+          plugin_followup: yes
+```
+
+### Custom output location and commit message
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    filename: assets/metrics.svg
+    committer_branch: main
+    committer_message: "chore: update metrics [skip ci]"
+```
+
+## Base content inputs
+
+The `base` input controls which sections of the default profile card are rendered. It accepts a comma-separated list of section names.
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: header, activity, community, repositories, metadata
+```
+
+Set `base_skip: yes` to suppress the base card entirely and use only plugin output.
+
+## Plugins
+
+Plugins are enabled by adding `plugin_<name>: yes` inputs. Each plugin may have additional configuration inputs prefixed with `plugin_<name>_`.
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    plugin_isocalendar: yes
+    plugin_isocalendar_duration: full-year
+    plugin_languages: yes
+    plugin_languages_ignored: html, css
+    plugin_habits: yes
+    plugin_habits_from: 200
+```
+
+<Note>
+  Some plugins require additional tokens or permissions beyond the base `token`. For example, the `traffic` plugin requires a token with the `repo` scope and owner access to the repository.
+</Note>
+
+## Debugging
+
+Set `debug: yes` to enable verbose logging in the action output. Use `dryrun: yes` to run the full rendering pipeline without committing or uploading the result — useful for testing configuration changes.
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    debug: yes
+    dryrun: yes
+```

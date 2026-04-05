@@ -1,0 +1,277 @@
+---
+title: "Web instance"
+description: "Self-host Metrics as a web server using Docker to generate profile images on demand via HTTP requests."
+keywords: ["web instance", "self-hosted", "docker", "metrics", "server", "configuration", "oauth"]
+---
+
+A web instance lets you host Metrics as an HTTP server that generates profile images on demand. Instead of running on a schedule in GitHub Actions, the server responds to GET requests and returns rendered SVG, PNG, or JSON output.
+
+This setup is useful when you want to serve metrics for multiple users from a single host, integrate metrics into a website, or give others access to an embed tool with a UI.
+
+## Prerequisites
+
+- Docker installed on your host machine
+- A GitHub Personal Access Token (the server uses this for all API calls)
+- A server with a public IP or domain if you want to share the instance externally
+
+## Quick start with Docker
+
+Pull and run the Metrics image:
+
+```bash
+docker run \
+  -e METRICS_TOKEN=<your-github-token> \
+  -p 3000:3000 \
+  ghcr.io/lowlighter/metrics:latest
+```
+
+Replace `<your-github-token>` with a GitHub PAT that has `read:user` and `repo` scopes. The server starts listening on port 3000.
+
+To verify it is running, open your browser and navigate to `http://localhost:3000/your-github-username`. The server will return an SVG of your metrics.
+
+## Configuration file
+
+For production use, configure the instance with a JSON settings file. Start from the official example:
+
+```bash
+curl -o settings.json \
+  https://raw.githubusercontent.com/lowlighter/metrics/latest/settings.example.json
+```
+
+Edit the file for your setup, then mount it when running the container:
+
+```bash
+docker run \
+  -v $(pwd)/settings.json:/metrics/settings.json \
+  -p 3000:3000 \
+  ghcr.io/lowlighter/metrics:latest
+```
+
+### Settings reference
+
+Below is an annotated version of the settings file showing the key options:
+
+```json
+{
+  "token": "GITHUB API TOKEN",
+  "modes": ["embed", "insights"],
+  "restricted": [],
+  "maxusers": 0,
+  "cached": 3600000,
+  "ratelimiter": null,
+  "port": 3000,
+  "optimize": true,
+  "debug": false,
+  "repositories": 100,
+  "padding": ["0", "8 + 11%"],
+  "outputs": ["svg", "png", "json"],
+  "hosted": {
+    "by": "",
+    "link": ""
+  },
+  "oauth": {
+    "id": null,
+    "secret": null,
+    "url": "https://example.com"
+  },
+  "templates": {
+    "default": "classic",
+    "enabled": []
+  },
+  "plugins.default": false,
+  "plugins": {
+    "languages": { "enabled": false },
+    "achievements": { "enabled": false }
+  }
+}
+```
+
+### Core settings
+
+<AccordionGroup>
+  <Accordion title="token">
+    **Required.** A GitHub Personal Access Token used for all API requests made by the server. Needs at minimum `read:user` scope. Additional scopes may be required for specific plugins.
+  </Accordion>
+  <Accordion title="modes">
+    Array of modes to enable. Accepted values:
+    - `embed` — enables the `/username` endpoint that returns rendered metrics images, and serves the embed UI at `/embed/`
+    - `insights` — enables the insights dashboard at `/insights/username`
+
+    Both modes are enabled by default in the example config.
+  </Accordion>
+  <Accordion title="restricted">
+    Array of GitHub usernames allowed to use the instance. An empty array disables the restriction and allows any username. Use this to limit your instance to specific users.
+
+    ```json
+    "restricted": ["alice", "bob"]
+    ```
+  </Accordion>
+  <Accordion title="maxusers">
+    Maximum number of distinct users whose metrics can be cached at once. Set to `0` to disable the limit. When the limit is reached, the server returns a 503 error for new users until cached entries expire.
+  </Accordion>
+  <Accordion title="cached">
+    How long to cache rendered metrics in milliseconds. Default is `3600000` (1 hour). Set to `0` to disable caching and always render fresh metrics on each request.
+  </Accordion>
+  <Accordion title="port">
+    Port the server listens on. Default is `3000`.
+  </Accordion>
+  <Accordion title="ratelimiter">
+    Rate limiter configuration. Accepts a configuration object compatible with [express-rate-limit](https://github.com/nfriedly/express-rate-limit), or `null` to disable rate limiting.
+
+    Example to limit to 10 requests per minute per IP:
+
+    ```json
+    "ratelimiter": {
+      "windowMs": 60000,
+      "max": 10
+    }
+    ```
+  </Accordion>
+  <Accordion title="outputs">
+    Array of allowed output formats. Accepted values: `svg`, `png`, `json`. An empty array enables all formats. Limiting outputs reduces the attack surface and resource use on shared instances.
+  </Accordion>
+  <Accordion title="optimize">
+    Whether to run SVG optimization (via SVGO) on the rendered output. Enabled by default. Disable to reduce CPU load on high-traffic instances at the cost of larger output files.
+  </Accordion>
+</AccordionGroup>
+
+### Plugin settings
+
+Plugins are disabled by default on web instances. Enable individual plugins in the `plugins` section of your settings file:
+
+```json
+"plugins.default": false,
+"plugins": {
+  "languages": {
+    "enabled": true
+  },
+  "habits": {
+    "enabled": true
+  },
+  "isocalendar": {
+    "enabled": true
+  }
+}
+```
+
+Set `"plugins.default": true` to enable all plugins at once (not recommended for public instances due to resource usage).
+
+Some plugins require a third-party API token configured at the server level rather than per-request:
+
+```json
+"plugins": {
+  "wakatime": {
+    "token": "your-wakatime-token",
+    "enabled": true
+  }
+}
+```
+
+## Fetching metrics via URL
+
+The embed mode exposes the following endpoint:
+
+```
+GET /:username
+GET /:username/:repository
+```
+
+Query parameters map directly to action inputs. For example, to enable the languages plugin:
+
+```
+http://localhost:3000/alice?plugin_languages=1
+```
+
+To render a specific template:
+
+```
+http://localhost:3000/alice?template=terminal
+```
+
+To change the output format:
+
+```
+http://localhost:3000/alice?config.output=png
+```
+
+For repository metrics:
+
+```
+http://localhost:3000/alice/my-repo
+```
+
+<Note>
+  Only plugins that are enabled in your `settings.json` can be activated via query parameters. Requesting a disabled plugin has no effect.
+</Note>
+
+### Embedding in a README
+
+Use the web instance URL directly in a Markdown image tag:
+
+```markdown
+![Metrics](https://your-instance.example.com/alice)
+```
+
+You can append query parameters to customize the output:
+
+```markdown
+![Metrics](https://your-instance.example.com/alice?plugin_languages=1&plugin_isocalendar=1)
+```
+
+## OAuth setup
+
+OAuth lets users authenticate with their own GitHub account on your web instance, allowing them to access private data and use elevated API quotas.
+
+To enable OAuth:
+
+1. Create a GitHub OAuth App at [github.com/settings/developers](https://github.com/settings/developers)
+2. Set the **Authorization callback URL** to `https://your-instance.example.com/.oauth/authorize`
+3. Copy the **Client ID** and **Client Secret**
+4. Add them to your `settings.json`:
+
+```json
+"oauth": {
+  "id": "your-oauth-client-id",
+  "secret": "your-oauth-client-secret",
+  "url": "https://your-instance.example.com"
+}
+```
+
+When OAuth is configured, users can log in at `/.oauth/` to authenticate with their own GitHub token. Authenticated requests use the user's own token instead of the server's default token, which gives access to private repositories and avoids shared API rate limits.
+
+<Warning>
+  Keep your OAuth client secret confidential. Anyone with the client ID and secret can impersonate your OAuth app. Store them outside version control and rotate them if they are ever exposed.
+</Warning>
+
+## Docker Compose example
+
+For a more maintainable setup, use Docker Compose:
+
+```yaml
+services:
+  metrics:
+    image: ghcr.io/lowlighter/metrics:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./settings.json:/metrics/settings.json
+    restart: unless-stopped
+```
+
+Run with:
+
+```bash
+docker compose up -d
+```
+
+## Hosting considerations
+
+**Reverse proxy**: Run Metrics behind nginx or Caddy to handle TLS termination and domain routing.
+
+**Rate limiting**: Enable the `ratelimiter` setting to protect your GitHub API quota from abuse on public instances.
+
+**Restricted access**: Use the `restricted` setting to limit the instance to specific users if you don't want it to be publicly accessible.
+
+**Caching**: The default 1-hour cache reduces API calls significantly. Increase the `cached` value if your metrics don't need to update frequently.
+
+**Resource usage**: Each render spawns a Puppeteer (headless Chrome) process. On low-memory servers, limit `maxusers` and increase the `cached` duration to reduce concurrent rendering.

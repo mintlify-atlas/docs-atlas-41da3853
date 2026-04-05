@@ -1,0 +1,294 @@
+---
+title: 'Core options'
+description: 'Essential configuration options that apply to all metrics generation, including authentication, output, rendering, and API settings.'
+keywords: ['token', 'configuration', 'output', 'github actions', 'core']
+---
+
+Core options control the fundamental behavior of metrics generation — authentication, where output is committed, how the image is rendered, and how the action handles errors and rate limits. These options apply regardless of which plugins or templates you use.
+
+## Authentication & output
+
+<ParamField path="token" type="string" required>
+  Your GitHub Personal Access Token. This is the primary credential used to call the GitHub REST and GraphQL APIs to collect data.
+
+  The required OAuth scopes depend on which plugins you enable. At minimum, `public_repo` is needed for basic profile metrics. Store this value as a repository secret and reference it as `${{ secrets.METRICS_TOKEN }}`.
+</ParamField>
+
+<ParamField path="user" type="string">
+  GitHub username to generate metrics for. Defaults to the owner of the token when not specified.
+
+  Set this explicitly when generating metrics for another user or an organization account.
+</ParamField>
+
+<ParamField path="repo" type="string">
+  GitHub repository name to generate repository-specific metrics for. Required when using the `repository` template.
+
+  When the token owner is not the repository owner, you must also set `user` to the repository owner.
+</ParamField>
+
+<ParamField path="committer_token" type="string" default="${{ github.token }}">
+  GitHub token used to commit the output file. Defaults to the built-in `GITHUB_TOKEN` provided by GitHub Actions.
+
+  Override this when the default token lacks write permissions to the target branch, or when committing to a different repository.
+</ParamField>
+
+<ParamField path="committer_branch" type="string">
+  Target branch where the output file will be committed. Defaults to the repository's default branch.
+</ParamField>
+
+<ParamField path="committer_message" type="string">
+  Commit message used when pushing the output file. Defaults to a generic message like `Update metrics`.
+</ParamField>
+
+<ParamField path="committer_gist" type="string">
+  Gist ID to use when `output_action` is set to `gist`. The gist must already exist and be accessible to the `committer_token`.
+</ParamField>
+
+<ParamField path="filename" type="string" default="github-metrics.svg">
+  Path and filename for the output file. Supports glob patterns when generating multiple outputs.
+
+  Examples: `github-metrics.svg`, `metrics/profile.svg`, `metrics.*.svg`.
+</ParamField>
+
+<ParamField path="output_action" type="string" default="commit">
+  What to do with the rendered output. Accepted values:
+
+  - `commit` — commit the file to `committer_branch`
+  - `gist` — update the gist specified by `committer_gist`
+  - `pull-request` — open a pull request with the new file
+  - `pull-request-merge` — open and merge a pull request (merge commit)
+  - `pull-request-squash` — open and squash-merge a pull request
+  - `pull-request-rebase` — open and rebase-merge a pull request
+  - `none` — skip publishing; useful for dry runs or chaining with other steps
+</ParamField>
+
+<ParamField path="output_condition" type="string" default="always">
+  Controls when the output action runs. Set to `data-changed` to only publish when the rendered metrics data has actually changed, reducing unnecessary commits.
+</ParamField>
+
+```yaml Example: commit output to current branch
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    filename: github-metrics.svg
+    output_action: commit
+```
+
+```yaml Example: publish output to a gist
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    output_action: gist
+    committer_gist: your-gist-id-here
+    committer_token: ${{ secrets.METRICS_TOKEN }}
+```
+
+---
+
+## Rendering options
+
+<ParamField path="config_timezone" type="string" default="">
+  IANA timezone name used when formatting dates and timestamps in rendered output. For example: `America/New_York`, `Europe/Paris`, `Asia/Tokyo`.
+
+  When left empty, dates use UTC.
+</ParamField>
+
+<ParamField path="config_order" type="string">
+  Comma-separated list of plugin names that defines the display order of sections in the output. Plugins not listed will appear after those that are.
+
+  Example: `base.header, languages, habits, achievements`
+</ParamField>
+
+<ParamField path="config_animations" type="boolean" default="true">
+  Enable CSS animations in SVG output. Disable to produce static SVGs that are friendlier to screen readers and email clients that strip animations.
+</ParamField>
+
+<ParamField path="config_padding" type="string" default="0, 8 + 11%">
+  Output padding added around rendered content. Accepts CSS-like values with optional percentage offsets.
+
+  Format: `top-bottom, left-right` or a single value applied to all sides. Example: `5%`, `10, 5%`.
+</ParamField>
+
+<ParamField path="config_display" type="string" default="regular">
+  Controls the rendered width of the output image. Accepted values:
+
+  - `regular` — standard width (480px)
+  - `large` — wider layout (960px)
+  - `columns` — multi-column layout
+
+  Affects all image output formats (SVG, PNG, JPEG).
+</ParamField>
+
+<ParamField path="config_twemoji" type="boolean" default="false">
+  Replace Unicode emoji characters with [Twemoji](https://twemoji.twitter.com/) images. Produces consistent cross-platform emoji rendering in SVG output.
+</ParamField>
+
+<ParamField path="config_gemoji" type="boolean" default="true">
+  Render GitHub custom emoji shortcodes (`:octocat:`, etc.) as images. Requires internet access to fetch emoji assets.
+</ParamField>
+
+<ParamField path="config_octicon" type="boolean" default="false">
+  Replace Octicon references with SVG images from the GitHub Octicons icon set.
+</ParamField>
+
+<ParamField path="config_base64" type="boolean" default="true">
+  Embed all external images as Base64-encoded data URIs inside the SVG. Produces a self-contained file that displays correctly without external network requests.
+
+  Disable only when file size is a concern and external image loading is acceptable.
+</ParamField>
+
+<ParamField path="config_presets" type="string" default="">
+  Comma-separated list of configuration presets to apply. Presets are predefined sets of options identified by name or URL.
+
+  Community presets can be loaded by URL. Example: `https://raw.githubusercontent.com/user/repo/main/preset.yml`
+</ParamField>
+
+```yaml Example: rendering with timezone, animations off, and Twemoji
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    config_timezone: Europe/London
+    config_animations: false
+    config_twemoji: true
+    config_display: large
+    config_padding: 5%
+```
+
+---
+
+## API & rate limits
+
+<ParamField path="github_api_rest" type="string">
+  Custom GitHub REST API endpoint. Override when using GitHub Enterprise Server or a proxy.
+
+  Example: `https://github.example.com/api/v3`
+</ParamField>
+
+<ParamField path="github_api_graphql" type="string">
+  Custom GitHub GraphQL API endpoint. Override when using GitHub Enterprise Server or a proxy.
+
+  Example: `https://github.example.com/api/graphql`
+</ParamField>
+
+<ParamField path="quota_required_rest" type="number" default="200">
+  Minimum number of GitHub REST API requests that must remain in the rate limit quota before the action will proceed. The action exits early if the available quota is below this threshold.
+</ParamField>
+
+<ParamField path="quota_required_graphql" type="number" default="200">
+  Minimum number of GitHub GraphQL API requests that must remain in the rate limit quota before the action will proceed.
+</ParamField>
+
+<ParamField path="quota_required_search" type="number" default="0">
+  Minimum number of GitHub Search API requests that must remain before the action will proceed.
+</ParamField>
+
+<ParamField path="retries" type="number" default="3">
+  Number of times to retry rendering if it fails. Applies to the metrics rendering step, not the output commit step.
+</ParamField>
+
+<ParamField path="retries_delay" type="number" default="300">
+  Delay in seconds between rendering retries.
+</ParamField>
+
+<ParamField path="retries_output_action" type="number" default="5">
+  Number of times to retry the output action (commit, gist update, etc.) if it fails.
+</ParamField>
+
+<ParamField path="retries_delay_output_action" type="number" default="120">
+  Delay in seconds between output action retries.
+</ParamField>
+
+<ParamField path="delay" type="number" default="0">
+  Delay in seconds to wait before starting the job. Useful when running multiple parallel metrics jobs to avoid simultaneous API bursts.
+</ParamField>
+
+```yaml Example: conservative rate limit settings with retry tuning
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    quota_required_rest: 500
+    quota_required_graphql: 500
+    retries: 5
+    retries_delay: 60
+    delay: 30
+```
+
+---
+
+## Debug options
+
+<ParamField path="debug" type="boolean" default="false">
+  Enable verbose debug logging. Outputs detailed information about API calls, plugin execution, and rendering steps to the Actions log.
+
+  <Warning>Debug output may expose sensitive data from API responses. Do not enable this permanently in production workflows.</Warning>
+</ParamField>
+
+<ParamField path="dryrun" type="boolean" default="false">
+  Run metrics generation without committing or publishing the output. Useful for testing configuration changes without side effects.
+</ParamField>
+
+<ParamField path="plugins_errors_fatal" type="boolean" default="false">
+  When enabled, any plugin error causes the entire action to fail rather than producing a partial output with a placeholder for the failed plugin.
+
+  Enable this in CI to catch plugin misconfigurations early.
+</ParamField>
+
+<ParamField path="debug_flags" type="string">
+  Comma-separated list of debug flags to enable specific internal debugging behaviors. Intended for advanced debugging and development.
+</ParamField>
+
+<ParamField path="debug_print" type="boolean" default="false">
+  Print the final rendered output to the console log in addition to saving it to a file.
+</ParamField>
+
+<ParamField path="verify" type="boolean" default="false">
+  Run an SVG validity check on the rendered output before committing. The action fails if the SVG is malformed.
+</ParamField>
+
+```yaml Example: debug run without committing
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    debug: true
+    dryrun: true
+    plugins_errors_fatal: true
+```
+
+---
+
+## Complete example
+
+A complete workflow file combining the most common core options:
+
+```yaml Complete metrics workflow
+name: Metrics
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          user: your-username
+          filename: github-metrics.svg
+          output_action: commit
+          committer_branch: main
+          committer_message: 'chore: update metrics'
+          config_timezone: America/New_York
+          config_twemoji: true
+          config_base64: true
+          config_animations: true
+          config_display: regular
+          quota_required_rest: 200
+          quota_required_graphql: 200
+          retries: 3
+          retries_delay: 300
+          plugins_errors_fatal: false
+```

@@ -1,0 +1,105 @@
+---
+title: "WakaTime"
+description: "Display coding time statistics from WakaTime"
+keywords: ["wakatime", "coding time", "time tracking", "wakapi", "developer metrics"]
+---
+
+The WakaTime plugin displays statistics from your [WakaTime](https://wakatime.com) account, including total coding time, project breakdowns, language usage, editors, and operating systems. It is also compatible with self-hosted [Wakapi](https://github.com/muety/wakapi) instances.
+
+Enable the plugin by adding `plugin_wakatime: true` to your workflow.
+
+<Warning>
+A WakaTime API token is required. Store it as a GitHub secret and reference it with `${{ secrets.WAKATIME_TOKEN }}`.
+</Warning>
+
+## Obtaining a WakaTime token
+
+<Steps>
+  <Step title="Create an account">
+    Sign up at [wakatime.com](https://wakatime.com) and install the [WakaTime editor plugin](https://wakatime.com/plugins) for your IDE.
+  </Step>
+  <Step title="Get your API key">
+    Navigate to [Account settings](https://wakatime.com/settings/account) and copy your API key.
+  </Step>
+  <Step title="Store as a GitHub secret">
+    In your repository, go to **Settings → Secrets and variables → Actions** and add a new secret named `WAKATIME_TOKEN` with your API key as the value.
+  </Step>
+</Steps>
+
+## Options
+
+<ParamField path="plugin_wakatime_token" type="string" required>
+  Your WakaTime API token. Store this as a GitHub secret and reference it with `${{ secrets.WAKATIME_TOKEN }}`.
+</ParamField>
+
+<ParamField path="plugin_wakatime_url" type="string">
+  WakaTime instance URL. Defaults to `https://wakatime.com`. Set this to point to a self-hosted [Wakapi](https://github.com/muety/wakapi) instance.
+</ParamField>
+
+<ParamField path="plugin_wakatime_user" type="string">
+  WakaTime username to display data for. Defaults to `current` (the owner of the API token).
+</ParamField>
+
+<ParamField path="plugin_wakatime_sections" type="string">
+  Comma-separated list of sections to display. Defaults to `time, projects, projects-graphs, languages, languages-graphs, editors, os`.
+
+  Available sections:
+  - `time` — total coding time and daily average
+  - `projects` — most time spent project
+  - `projects-graphs` — project time graphs
+  - `languages` — most used language
+  - `languages-graphs` — language usage graphs
+  - `editors` — most used code editor
+  - `editors-graphs` — editor usage graphs
+  - `os` — most used operating system
+  - `os-graphs` — operating system usage graphs
+</ParamField>
+
+<ParamField path="plugin_wakatime_days" type="string">
+  Time range for statistics. Defaults to `7`. Allowed values: `7`, `30`, `180`, `365`.
+</ParamField>
+
+<ParamField path="plugin_wakatime_limit" type="number">
+  Maximum number of entries to display per graph. Defaults to `5`. Set to `0` to disable the limit.
+</ParamField>
+
+<ParamField path="plugin_wakatime_languages_other" type="boolean">
+  When enabled, groups remaining languages that fall below the display limit into an "Other" category. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_wakatime_languages_ignored" type="string">
+  Comma-separated list of languages to exclude from the display.
+</ParamField>
+
+<ParamField path="plugin_wakatime_repositories_visibility" type="string">
+  Controls which repository activity is included. Defaults to `all`. Allowed values: `public`, `all`.
+</ParamField>
+
+## Example workflow
+
+```yaml
+name: WakaTime metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          filename: metrics.plugin.wakatime.svg
+          token: NOT_NEEDED
+          base: ""
+          plugin_wakatime: yes
+          plugin_wakatime_token: ${{ secrets.WAKATIME_TOKEN }}
+          plugin_wakatime_sections: time, projects, projects-graphs, languages, languages-graphs, editors, os
+          plugin_wakatime_days: 7
+          plugin_wakatime_limit: 5
+```
+
+<Tip>
+You can combine the WakaTime plugin with GitHub base content by setting `token` to your GitHub personal access token and adjusting `base` to include sections like `header`.
+</Tip>

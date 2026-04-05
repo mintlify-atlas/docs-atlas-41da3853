@@ -1,0 +1,204 @@
+---
+title: "Community templates"
+description: "Use custom visual templates for your metrics output"
+---
+
+Templates control the visual appearance of your metrics output — the layout, typography, colors, and structure of the generated SVG. Metrics ships with four built-in templates, and you can load additional templates from any public GitHub repository.
+
+## Built-in templates
+
+| Template     | Description                                                    |
+| ------------ | -------------------------------------------------------------- |
+| `classic`    | Default layout with a card-style design                        |
+| `repository` | Optimized for repository-level metrics                         |
+| `terminal`   | Minimal terminal-inspired monospace aesthetic                  |
+| `markdown`   | Renders metrics as a Markdown-compatible format                |
+
+Select a template using the `template` input in your workflow:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    template: terminal
+```
+
+## Using community templates
+
+Community templates are loaded from external GitHub repositories at workflow run time using the `setup_community_templates` input. Once downloaded, you reference the template by prefixing its name with `@`.
+
+The `setup_community_templates` input accepts one or more sources in the following format:
+
+```
+user/repo@branch:template-name
+```
+
+### Basic example
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    setup_community_templates: username/repo@main:my-theme
+    template: "@my-theme"
+```
+
+### Trusting a community template
+
+For security, community templates run using the `classic` template's `template.mjs` by default rather than the remote template's own logic. If you trust the template source and want to use its full rendering code, append `+trust` to the source string.
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    setup_community_templates: username/repo@main:my-theme+trust
+    template: "@my-theme"
+```
+
+<Warning>
+  Trusting a community template allows remote code execution. The template has access to your workflow environment, including tokens and other secrets. Only trust templates from sources you control or fully trust. Template content can change at any time without notice.
+</Warning>
+
+### Passing custom parameters
+
+Some community templates accept additional configuration via the `query` input, using a JSON-formatted string:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    setup_community_templates: username/repo@main:my-theme+trust
+    template: "@my-theme"
+    query: |
+      {
+        "header_color": "#FF0000",
+        "show_icons": true
+      }
+```
+
+### Loading multiple templates
+
+You can load more than one community template in a single workflow step by separating sources with a space or newline:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    setup_community_templates: |
+      user-a/repo@main:theme-a
+      user-b/repo@main:theme-b
+    template: "@theme-a"
+```
+
+## Creating a community template
+
+Templates require familiarity with HTML, CSS, and [EJS](https://github.com/mde/ejs) templating. New templates should be distributed as community templates rather than submitted as additions to the main Metrics repository.
+
+<Steps>
+  <Step title="Clone the repository and install dependencies">
+    ```bash
+    git clone https://github.com/lowlighter/metrics.git
+    cd metrics/
+    npm install
+    ```
+  </Step>
+
+  <Step title="Scaffold the template">
+    Run the quickstart command with your chosen template name:
+
+    ```bash
+    npm run quickstart template <template_name>
+    ```
+
+    This creates the following structure under `source/templates/`:
+
+    ```
+    source/templates/{template-name}/
+    ├── image.svg          # SVG shell with EJS templating
+    ├── style.css          # Visual styles
+    ├── fonts.css          # Custom fonts (optional)
+    ├── template.mjs       # Rendering logic
+    ├── metadata.yml       # Template metadata
+    └── partials/
+        ├── _.json         # Ordered list of partials to include
+        └── *.ejs          # Per-plugin partial files
+    ```
+
+    Templates are auto-loaded from their directory — no manual registration is required.
+  </Step>
+
+  <Step title="Fill in metadata.yml">
+    Define the template name, which base template to fall back to when untrusted, and the supported account types and output formats.
+
+    ```yaml
+    name: 🖼️ My template
+    extends: classic
+    description: |
+      A custom template with a unique visual style.
+    examples:
+      default: https://via.placeholder.com/468x60?text=No%20preview%20available
+    supports:
+      - user
+      - organization
+    formats:
+      - svg
+      - png
+      - jpeg
+    ```
+
+    The `extends` field determines which template's `template.mjs` is used when a user has not explicitly trusted your template. Use `classic` for user/organization templates and `repository` for repository-scoped ones.
+  </Step>
+
+  <Step title="Design image.svg">
+    The `image.svg` file is the SVG shell. It uses EJS to loop over partials and inject plugin output. The structure looks like this:
+
+    ```xml
+    <svg xmlns="http://www.w3.org/2000/svg" width="480" height="99999"
+         class="<%= !animated ? 'no-animations' : '' %>">
+      <defs><style><%= fonts %></style></defs>
+      <style data-optimizable="true"><%= style %></style>
+
+      <foreignObject x="0" y="0" width="100%" height="100%">
+        <div xmlns="http://www.w3.org/1999/xhtml">
+          <% for (const partial of [...partials]) { %>
+            <%- await include(`partials/${partial}.ejs`) %>
+          <% } %>
+          <div id="metrics-end"></div>
+        </div>
+      </foreignObject>
+    </svg>
+    ```
+
+    The `#metrics-end` element is required — it acts as a marker that Puppeteer uses to calculate the final image height dynamically.
+  </Step>
+
+  <Step title="Create EJS partials">
+    Add a `.ejs` file to the `partials/` directory for each plugin section you want to display. Reference each partial by name in `partials/_.json` to set inclusion order.
+
+    Each partial should check for the plugin's presence and handle errors gracefully:
+
+    ```ejs
+    <% if (plugins.myplugin) { %>
+      <% if (plugins.myplugin.error) { %>
+        <%= plugins.myplugin.error.message %>
+      <% } else { %>
+        <%# Render plugin output here %>
+      <% } %>
+    <% } %>
+    ```
+  </Step>
+
+  <Step title="Publish and share">
+    Push your template to a public GitHub repository. Users can then reference it using the `setup_community_templates` input format:
+
+    ```
+    your-username/your-repo@main:your-template-name
+    ```
+  </Step>
+</Steps>
+
+## Light customization without a full template
+
+<Note>
+  If you only need to adjust colors or minor styles, you do not need to build a full community template. The `extras_css` option lets you inject custom CSS directly into any template, and `extras_js` lets you inject JavaScript. These are available for self-hosted instances where extras are enabled.
+</Note>

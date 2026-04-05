@@ -1,0 +1,115 @@
+{
+  "projectType": "framework",
+  "projectName": "Metrics",
+  "projectDescription": "An infographics generator with 40+ plugins and 300+ options to display GitHub stats as SVG, Markdown, PDF, or JSON, usable as a GitHub Action or self-hosted web instance.",
+  "theme": "palm",
+  "primaryColor": "#f13a15",
+  "lightColor": "#074335",
+  "darkColor": "#e7e8e8",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "setup/github-action",
+              "setup/web-instance"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/core-options",
+              "configuration/output-formats",
+              "configuration/templates"
+            ]
+          },
+          {
+            "group": "GitHub Plugins",
+            "pages": [
+              "plugins/github/overview",
+              "plugins/github/base",
+              "plugins/github/languages",
+              "plugins/github/achievements",
+              "plugins/github/activity",
+              "plugins/github/habits",
+              "plugins/github/repositories"
+            ]
+          },
+          {
+            "group": "Social Plugins",
+            "pages": [
+              "plugins/social/overview",
+              "plugins/social/wakatime",
+              "plugins/social/leetcode",
+              "plugins/social/stackoverflow",
+              "plugins/social/music"
+            ]
+          },
+          {
+            "group": "Extending Metrics",
+            "pages": [
+              "extending/community-plugins",
+              "extending/community-templates",
+              "extending/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "40+ plugins covering GitHub activity, social platforms, and personal stats",
+    "GitHub Action integration for automated metric generation",
+    "Self-hostable web instance with OAuth support",
+    "Multiple output formats: SVG, PNG, Markdown, PDF, and JSON",
+    "5 built-in templates (classic, terminal, repository, markdown, community)",
+    "300+ configuration options for deep customization",
+    "Community plugin and template extensibility",
+    "Supports user, organization, and repository metrics"
+  ],
+  "publicApiSurface": [
+    "plugin_isocalendar",
+    "plugin_languages",
+    "plugin_stargazers",
+    "plugin_lines",
+    "plugin_topics",
+    "plugin_stars",
+    "plugin_habits",
+    "plugin_contributors",
+    "plugin_followup",
+    "plugin_reactions",
+    "plugin_people",
+    "plugin_achievements",
+    "plugin_activity",
+    "plugin_calendar",
+    "plugin_discussions",
+    "plugin_notable",
+    "plugin_repositories",
+    "plugin_wakatime",
+    "plugin_leetcode",
+    "plugin_stackoverflow",
+    "plugin_music",
+    "plugin_anilist",
+    "plugin_steam",
+    "plugin_pagespeed",
+    "plugin_posts",
+    "plugin_rss",
+    "plugin_gists",
+    "plugin_projects",
+    "plugin_skyline",
+    "plugin_traffic",
+    "plugin_code",
+    "config_output",
+    "config_timezone",
+    "config_display",
+    "template",
+    "token",
+    "user",
+    "repo"
+  ]
+}

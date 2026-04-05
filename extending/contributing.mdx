@@ -1,0 +1,142 @@
+---
+title: "Contributing"
+description: "How to contribute plugins, templates, presets, and fixes to Metrics"
+---
+
+Contributions to Metrics are welcome. Whether you want to add a new community plugin, improve an existing feature, write tests, or fix documentation — this guide explains how to get started.
+
+The source code lives at [https://github.com/lowlighter/metrics](https://github.com/lowlighter/metrics).
+
+<Note>
+  Open a [discussion](https://github.com/lowlighter/metrics/discussions) before starting work on a large feature. This helps avoid duplicating effort with open pull requests and ensures maintainers can provide early feedback.
+</Note>
+
+## What you can contribute
+
+<AccordionGroup>
+  <Accordion title="Plugins">
+    - **Changes to existing plugins** — new options and features are accepted if they are optional and backward compatible.
+    - **New community plugins** — welcome provided they are functional and not redundant with existing plugins. See [community plugins](/extending/community-plugins) for the full creation guide.
+
+    Community plugins live in `source/plugins/community/` and are auto-loaded from their directory.
+  </Accordion>
+
+  <Accordion title="Templates">
+    - **Changes to existing templates** — allowed when new features remain visually consistent with the current design.
+    - **New templates** — submit these as [community templates](/extending/community-templates) distributed via your own GitHub repository rather than as additions to the main repo.
+
+    Template source files live in `source/templates/`.
+  </Accordion>
+
+  <Accordion title="Presets">
+    New presets are welcome provided they are functional and not redundant with existing ones. Note that presets live on the [`@presets`](https://github.com/lowlighter/metrics/tree/presets) branch, not `master`.
+  </Accordion>
+
+  <Accordion title="Tests">
+    Anything that improves stability and test coverage is welcome. Test files live in the `tests/` directory.
+  </Accordion>
+
+  <Accordion title="Documentation">
+    Documentation improvements — clarity fixes, missing examples, or corrections — are accepted. These docs are generated from MDX files and from auto-generated content derived from plugin `metadata.yml` and `examples.yml` files.
+  </Accordion>
+
+  <Accordion title="Core engine">
+    Core changes affect the entire rendering pipeline and require discussion before implementation. New dependencies should be avoided when possible. Core files live in `source/app/metrics/`.
+  </Accordion>
+</AccordionGroup>
+
+## Development setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/lowlighter/metrics.git
+    cd metrics/
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
+
+  <Step title="Start the development server">
+    Run the local web instance to preview metrics output in your browser:
+
+    ```bash
+    npm run dev
+    ```
+
+    Once started, open your browser and navigate to:
+
+    ```
+    http://localhost:3000/your-github-username?base=1
+    ```
+
+    You can append query parameters to enable specific plugins. For example, to test a plugin named `myplugin`:
+
+    ```
+    http://localhost:3000/your-github-username?base=0&myplugin=1
+    ```
+
+    Configure the local server by editing `settings.json`. Set `token` to a valid GitHub token, `plugins.default` to `true` to enable all plugins by default, and `debug` to `true` for verbose logging.
+  </Step>
+
+  <Step title="Run the linter">
+    Before committing, ensure there are no linting errors:
+
+    ```bash
+    npm run linter
+    ```
+  </Step>
+
+  <Step title="Run tests">
+    ```bash
+    npm test
+    ```
+
+    Tests run against mocked data in `tests/mocks/api/` to avoid hitting live APIs. When adding a plugin, you must also add the corresponding mock files.
+  </Step>
+</Steps>
+
+## Project structure
+
+Understanding the layout of the repository helps you find the right place to make changes.
+
+| Path | Description |
+| ---- | ----------- |
+| `source/app/metrics/` | Core metrics engine — data aggregation, rendering pipeline |
+| `source/app/action/` | GitHub Action entry point and action descriptor |
+| `source/app/web/` | Web instance server, client code, and placeholder data |
+| `source/plugins/*/` | Plugin source code, each in its own directory |
+| `source/templates/*/` | Template source files — SVG shells, styles, and partials |
+| `tests/` | Test suite and mocked API data |
+
+Each plugin directory contains:
+- `index.mjs` — plugin logic
+- `metadata.yml` — input definitions and supported account types
+- `examples.yml` — workflow examples used for documentation and testing
+- `README.md` — auto-generated documentation
+
+Each template directory contains:
+- `image.svg` — SVG shell with EJS templating
+- `style.css` — visual styles
+- `template.mjs` — rendering logic
+- `metadata.yml` — template metadata
+- `partials/` — per-plugin EJS partial files
+
+## Submitting a pull request
+
+Before opening a pull request:
+
+- Confirm no existing open or draft pull request already covers the same change
+- Run `npm run linter` and resolve any errors
+- Include a screenshot or rendered SVG output if your change affects visual output
+- Ensure all examples in `examples.yml` have `prod.skip: true` set
+
+Commits are squashed on merge, so there is no need to rebase or clean up commit history before submitting.
+
+<Warning>
+  Inactive pull requests are closed after 3 weeks and locked after 5 weeks. If you need more time, leave a comment on the pull request to signal continued activity.
+</Warning>

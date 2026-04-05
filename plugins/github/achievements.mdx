@@ -1,0 +1,82 @@
+---
+title: "Achievements"
+description: "Display unlocked GitHub achievements and badges"
+---
+
+The achievements plugin displays highlights about what an account has accomplished on GitHub, including unlocked badges and their rank tiers. Achievements are ranked from **X** (locked) through **C**, **B**, **A**, and **S** (highest).
+
+Enable the plugin with:
+
+```yaml
+plugin_achievements: yes
+```
+
+## Options
+
+<ParamField path="plugin_achievements_threshold" type="string">
+  Minimum rank required for an achievement to be displayed. Use `X` to also show locked (not yet unlocked) achievements. Accepted values: `S`, `A`, `B`, `C`, `X`. Default: `C`.
+</ParamField>
+
+<ParamField path="plugin_achievements_secrets" type="boolean">
+  Include secret achievements in the output. Defaults to `true`.
+</ParamField>
+
+<ParamField path="plugin_achievements_display" type="string">
+  Visual display style. Accepted values:
+  - `detailed` — shows icon, name, description, and ranking
+  - `compact` — shows icon, name, and value
+
+  Default: `detailed`.
+</ParamField>
+
+<ParamField path="plugin_achievements_limit" type="number">
+  Maximum number of achievements to display. Set to `0` to show all. Default: `0`.
+</ParamField>
+
+<ParamField path="plugin_achievements_ignored" type="string">
+  Comma-separated list of achievements to hide. Use the base achievement name without rank adjectives — omit words like "great", "super", or "master" (e.g. use `stargazer`, not `great stargazer`).
+</ParamField>
+
+<ParamField path="plugin_achievements_only" type="string">
+  Comma-separated list of achievements to exclusively show. All other achievements are hidden. Equivalent to setting `plugin_achievements_ignored` for every achievement not in this list. Use base names without rank adjectives.
+</ParamField>
+
+## Workflow example
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.achievements.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_achievements: yes
+    plugin_achievements_threshold: B
+    plugin_achievements_secrets: yes
+    plugin_achievements_display: detailed
+    plugin_achievements_limit: 0
+    plugin_achievements_only: sponsor, maintainer, octonaut
+```
+
+For a compact display showing all unlocked and locked achievements:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.achievements.compact.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_achievements: yes
+    plugin_achievements_only: >-
+      polyglot, stargazer, sponsor, deployer, member, maintainer, developer,
+      scripter, packager, explorer, infographile, manager
+    plugin_achievements_display: compact
+    plugin_achievements_threshold: X
+```
+
+<Note>
+  On web instances, this plugin requires `metrics.run.puppeteer.scrapping` to be enabled in `settings.json`.
+</Note>
+
+<Tip>
+  Use `plugin_achievements_threshold: X` together with `plugin_achievements_display: compact` to create a showcase of all possible achievements, including those not yet unlocked.
+</Tip>

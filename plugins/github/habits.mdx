@@ -1,0 +1,110 @@
+---
+title: "Coding habits"
+description: "Visualize coding patterns, peak hours, and language frequency"
+---
+
+The coding habits plugin analyzes your recent GitHub activity to surface patterns in how you work: your most active hours and days, preferred indentation style, average line length, and the languages you have been using most. It can display this as readable facts, charts, or both.
+
+Enable the plugin with:
+
+```yaml
+plugin_habits: yes
+```
+
+## Options
+
+<ParamField path="plugin_habits_from" type="number">
+  Number of recent events to analyze (1–1000). A higher value produces more representative statistics at the cost of additional API calls. Default: `200`.
+</ParamField>
+
+<ParamField path="plugin_habits_skipped" type="string">
+  Newline-separated list of repositories to exclude from analysis. Inherits from `repositories_skipped`.
+</ParamField>
+
+<ParamField path="plugin_habits_days" type="number">
+  Maximum age of events considered for analysis in days (1–30). Events older than this value are excluded. Default: `14`.
+</ParamField>
+
+<ParamField path="plugin_habits_facts" type="boolean">
+  Show mildly interesting facts derived from your activity, including indentation type, average characters per line of code, most active hour, and most active day. Defaults to `true`.
+</ParamField>
+
+<ParamField path="plugin_habits_charts" type="boolean">
+  Show charts visualizing commit activity per hour of day and per day of week. May also include recent language activity when extra features are enabled. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_habits_charts_type" type="string">
+  Visual style for charts. Accepted values:
+  - `classic` — lightweight `<div>`-based charts
+  - `graph` — smooth `<svg>`-based charts
+
+  The `chartist` value is deprecated and is now equivalent to `graph`. Default: `classic`.
+</ParamField>
+
+<ParamField path="plugin_habits_trim" type="boolean">
+  Remove hours with no activity from the edges of the hourly chart to reduce visual clutter. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_habits_languages_limit" type="number">
+  Maximum number of languages to display in the language activity section (0–8). Set to `0` to disable the language section. Default: `8`.
+</ParamField>
+
+<ParamField path="plugin_habits_languages_threshold" type="string">
+  Minimum percentage usage required for a language to appear in the language activity section. Default: `0%`.
+</ParamField>
+
+## Workflow example
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.habits.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_habits: yes
+    plugin_habits_from: 200
+    plugin_habits_days: 14
+    plugin_habits_facts: yes
+    plugin_habits_charts: yes
+    plugin_habits_charts_type: classic
+    plugin_habits_trim: no
+    plugin_habits_languages_limit: 8
+    plugin_habits_languages_threshold: 0%
+    config_timezone: Europe/Paris
+```
+
+For a facts-only display:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.habits.facts.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_habits: yes
+    plugin_habits_facts: yes
+    plugin_habits_charts: no
+    config_timezone: Europe/Paris
+```
+
+For a charts-only display:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.habits.charts.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_habits: yes
+    plugin_habits_facts: no
+    plugin_habits_charts: yes
+    config_timezone: Europe/Paris
+```
+
+<Tip>
+  Set `config_timezone` to your local timezone to ensure peak-hour data reflects your actual working hours rather than UTC. See the [list of supported timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+</Tip>
+
+<Note>
+  On web instances, the `plugin_habits_charts` option requires `metrics.api.github.overuse`, `metrics.run.tempdir`, and `metrics.run.git` to be enabled in `settings.json`. The `graph` chart type additionally requires `metrics.npm.optional.d3`.
+</Note>

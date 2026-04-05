@@ -1,0 +1,205 @@
+---
+title: "Community plugins"
+description: "Use and contribute community-maintained plugins for Metrics"
+---
+
+Community plugins extend Metrics with third-party integrations and niche features that go beyond the core GitHub-focused plugin set. They are maintained by individual contributors and live in the `source/plugins/community/` directory of the Metrics repository.
+
+## Available community plugins
+
+<CardGroup cols={3}>
+  <Card title="16personalities" icon="brain">
+    Displays your [16personalities](https://www.16personalities.com) MBTI personality type and traits on your metrics output.
+  </Card>
+  <Card title="Chess" icon="chess">
+    Shows your recent chess games and stats from platforms like chess.com or Lichess.
+  </Card>
+  <Card title="Crypto" icon="bitcoin-sign">
+    Displays cryptocurrency portfolio information and prices for selected assets.
+  </Card>
+  <Card title="Fortune" icon="cookie-bite">
+    Adds a random fortune cookie message to your metrics — a fun, lighthearted addition.
+  </Card>
+  <Card title="Nightscout" icon="droplet">
+    Integrates with [Nightscout](https://nightscout.github.io) to display continuous glucose monitoring data for diabetics.
+  </Card>
+  <Card title="PoopMap" icon="map-pin">
+    Displays statistics from the [PoopMap](https://poopmap.net) app, tracking bathroom habits.
+  </Card>
+  <Card title="Screenshot" icon="camera">
+    Captures a screenshot of any website and embeds it directly into your metrics SVG output.
+  </Card>
+  <Card title="Splatoon" icon="gamepad">
+    Shows your Splatoon 3 stats and recent game results via the Nintendo Switch Online API.
+  </Card>
+  <Card title="Stock prices" icon="chart-line">
+    Displays current or historical stock price information for one or more ticker symbols.
+  </Card>
+</CardGroup>
+
+## Enabling a community plugin
+
+Community plugins use the same workflow syntax as built-in plugins. Enable a community plugin by setting its corresponding input to `yes` in your workflow file.
+
+The example below enables the **chess** plugin to display recent games from a chess platform:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    plugin_chess: yes
+    plugin_chess_user: your-chess-username
+    plugin_chess_platform: lichess
+```
+
+For the **screenshot** plugin, which captures a website and embeds it in your output:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    plugin_screenshot: yes
+    plugin_screenshot_title: My website
+    plugin_screenshot_url: https://example.com
+    plugin_screenshot_selector: body
+```
+
+<Note>
+  Each community plugin has its own set of inputs documented in its `README.md` inside `source/plugins/community/{plugin-name}/`.
+</Note>
+
+## Creating a community plugin
+
+Community plugins require comfort with JavaScript, HTML, CSS, and [EJS](https://github.com/mde/ejs) templating. Before you begin, read the [contributing guide](/extending/contributing) and review existing plugins for reference.
+
+<Steps>
+  <Step title="Clone the repository and install dependencies">
+    ```bash
+    git clone https://github.com/lowlighter/metrics.git
+    cd metrics/
+    npm install
+    ```
+  </Step>
+
+  <Step title="Scaffold the plugin">
+    Run the quickstart command with your chosen plugin name. Pick an unused emoji as well — the name must not conflict with any existing plugin.
+
+    ```bash
+    npm run quickstart plugin <plugin_name>
+    ```
+
+    This creates the following structure under `source/plugins/community/`:
+
+    ```
+    source/plugins/community/{plugin-name}/
+    ├── index.mjs        # Plugin logic
+    ├── metadata.yml     # Plugin metadata and input definitions
+    ├── examples.yml     # Workflow examples used for docs and testing
+    └── README.md        # Auto-generated documentation
+    ```
+
+    Plugins are auto-loaded from their directory — no manual registration is needed.
+  </Step>
+
+  <Step title="Fill in metadata.yml">
+    Define the plugin name, category, supported account types, and all accepted inputs. The `inputs` section drives automatic type checking and validation.
+
+    ```yaml
+    name: "🧩 My plugin"
+    category: community
+    description: Short description of what the plugin does
+    examples:
+      default: https://via.placeholder.com/468x60?text=No%20preview%20available
+    authors:
+      - your-github-username
+    supports:
+      - user
+      - organization
+    scopes: []
+    inputs:
+      plugin_myplugin:
+        description: Enable my plugin
+        type: boolean
+        default: no
+      plugin_myplugin_option:
+        description: An example option
+        type: string
+        default: some-value
+    ```
+
+    Set `category` to `community` and add your GitHub username to `authors`.
+  </Step>
+
+  <Step title="Implement index.mjs">
+    The plugin's default export receives shared context including the GitHub login, authenticated API clients, and raw user inputs. Use `imports.metadata.plugins.{plugin-name}.inputs()` to validate and type-cast inputs automatically.
+
+    ```javascript
+    export default async function(
+      { login, q, imports, data, computed, rest, graphql, queries, account },
+      { enabled = false, extras = false } = {}
+    ) {
+      try {
+        if (!q.myplugin || imports.metadata.plugins.myplugin.enabled(enabled, { extras }))
+          return null
+
+        let { option } = imports.metadata.plugins.myplugin.inputs({ data, account, q })
+
+        // Fetch data, compute results...
+        return { result: "data" }
+      } catch (error) {
+        throw imports.format.error(error)
+      }
+    }
+    ```
+
+    <Warning>
+      Never mutate the shared input arguments — they are shared across all plugins and modifications will cause unintended side effects.
+    </Warning>
+  </Step>
+
+  <Step title="Create EJS partials">
+    Add a `.ejs` partial file to the `partials/` directory of each template you want to support (e.g., `classic`), and reference it in that template's `partials/_.json`. Partials should handle both the normal render state and error state gracefully.
+
+    ```ejs
+    <% if (plugins.myplugin) { %>
+      <% if (plugins.myplugin.error) { %>
+        <%= plugins.myplugin.error.message %>
+      <% } else { %>
+        <%# Render plugin content here %>
+      <% } %>
+    <% } %>
+    ```
+  </Step>
+
+  <Step title="Add workflow examples in examples.yml">
+    Examples are used for both documentation generation and automated testing. Set `prod.skip: true` so production runs are skipped — use your own rendered output as the example image instead.
+
+    ```yaml
+    - name: My plugin example
+      uses: lowlighter/metrics@latest
+      with:
+        filename: metrics.plugin.myplugin.svg
+        token: ${{ secrets.METRICS_TOKEN }}
+        base: ""
+        plugin_myplugin: yes
+      prod:
+        skip: true
+    ```
+  </Step>
+
+  <Step title="Test locally and submit a pull request">
+    Start a local web instance and verify the plugin output at `http://localhost:3000/username?base=0&my-plugin=1`.
+
+    Before submitting, run the linter and confirm all checklist items from the contributing guide are complete:
+
+    ```bash
+    npm run linter
+    ```
+
+    Then open a pull request on GitHub and include a screenshot or rendered SVG so maintainers can preview your work.
+  </Step>
+</Steps>
+
+<Tip>
+  Study an existing simple plugin like `fortune` or `screenshot` before building your own — the patterns are reusable and will save you time.
+</Tip>

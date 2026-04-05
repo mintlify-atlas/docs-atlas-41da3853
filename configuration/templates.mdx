@@ -1,0 +1,318 @@
+---
+title: 'Templates'
+description: 'Built-in and community templates for metrics: classic, repository, terminal, markdown, and community templates. Covers template selection, customization, and presets.'
+keywords: ['template', 'classic', 'terminal', 'repository', 'markdown', 'community templates', 'css', 'javascript']
+---
+
+Templates control the visual appearance and layout of rendered metrics. The `template` option selects which template to use. The default template is `classic`.
+
+<ParamField path="template" type="string" default="classic">
+  Name of the template to use for rendering. Built-in values: `classic`, `repository`, `terminal`, `markdown`. Community templates are referenced with an `@` prefix, for example `@my-theme`.
+</ParamField>
+
+---
+
+## Built-in templates
+
+<Tabs>
+  <Tab title="Classic">
+    The default template. Mimics GitHub's visual identity with a clean card layout. Suitable for user and organization profiles.
+
+    **Supported account types:** Users, Organizations  
+    **Supported output formats:** SVG, PNG, JPEG, JSON
+
+    The classic template supports the widest range of plugins and is the best starting point for most profiles.
+
+    ```yaml Classic template (default)
+    - uses: lowlighter/metrics@latest
+      with:
+        token: ${{ secrets.METRICS_TOKEN }}
+        filename: metrics.classic.svg
+        base: header, repositories
+        plugin_lines: yes
+    ```
+
+    <Note>
+      The `template` option can be omitted when using the classic template — it is the default.
+    </Note>
+  </Tab>
+
+  <Tab title="Repository">
+    Designed specifically for repository metrics. Displays information scoped to a single repository: contributors, languages, follow-up on issues and pull requests, and more.
+
+    **Supported account types:** Repositories  
+    **Supported output formats:** SVG, PNG, JPEG, JSON
+
+    A `repo` handle is required. If the token owner is not the repository owner, set `user` to the repository owner.
+
+    ```yaml Repository template
+    - uses: lowlighter/metrics@latest
+      with:
+        template: repository
+        filename: metrics.repository.svg
+        token: ${{ secrets.METRICS_TOKEN_WITH_SCOPES }}
+        user: lowlighter
+        repo: metrics
+        plugin_lines: yes
+        plugin_followup: yes
+        plugin_projects: yes
+        plugin_projects_repositories: lowlighter/metrics/projects/1
+    ```
+
+    <Info>
+      The repository template only works with repository-scoped plugins such as `plugin_contributors`, `plugin_languages`, `plugin_lines`, `plugin_followup`, `plugin_licenses`, and `plugin_stargazers`.
+    </Info>
+  </Tab>
+
+  <Tab title="Terminal">
+    Mimics the aesthetic of an SSH terminal session. Renders metrics in a command-line style layout.
+
+    **Supported account types:** Users, Organizations  
+    **Supported output formats:** SVG, PNG, JPEG, JSON
+
+    The terminal template supports a focused subset of plugins: `plugin_isocalendar`, `plugin_languages`, `plugin_lines`, `plugin_gists`, `plugin_pagespeed`, `plugin_traffic`, and `plugin_screenshot`.
+
+    ```yaml Terminal template
+    - uses: lowlighter/metrics@latest
+      with:
+        template: terminal
+        filename: metrics.terminal.svg
+        token: ${{ secrets.METRICS_TOKEN }}
+        base: header, metadata
+    ```
+  </Tab>
+
+  <Tab title="Markdown">
+    Outputs a Markdown file (`.md`) instead of an image. Requires a Markdown template file written using the [EJS](https://github.com/mde/ejs) templating engine. All metrics data collected by enabled plugins is available as template variables.
+
+    **Supported account types:** Users, Organizations, Repositories  
+    **Supported output formats:** Markdown, Markdown PDF, JSON
+
+    The Markdown template has a special `embed()` function that renders other metrics configurations as SVG inline within the Markdown output, without requiring additional workflow jobs.
+
+    ```yaml Markdown template
+    - uses: lowlighter/metrics@latest
+      with:
+        template: markdown
+        filename: metrics.markdown.md
+        config_output: markdown
+        token: ${{ secrets.METRICS_TOKEN }}
+        markdown: >-
+          https://raw.githubusercontent.com/lowlighter/metrics/examples/metrics.markdown.template.md
+    ```
+
+    ```yaml Markdown template with embedded SVG renders
+    - uses: lowlighter/metrics@latest
+      with:
+        template: markdown
+        filename: metrics.markdown.full.md
+        config_output: markdown
+        token: ${{ secrets.METRICS_TOKEN }}
+        markdown: >-
+          https://raw.githubusercontent.com/lowlighter/metrics/master/source/templates/markdown/example.md
+        markdown_cache: .cache
+        plugin_activity: yes
+        plugin_activity_limit: 7
+        plugin_activity_days: 0
+        plugin_activity_filter: issue, pr, release, fork, review, ref/create
+        plugin_posts: yes
+        plugin_posts_source: dev.to
+        plugin_posts_limit: 2
+        plugin_languages: yes
+        plugin_isocalendar: yes
+    ```
+
+    ```yaml Markdown PDF output
+    - uses: lowlighter/metrics@latest
+      with:
+        template: markdown
+        filename: metrics.pdf
+        config_output: markdown-pdf
+        token: ${{ secrets.METRICS_TOKEN }}
+        markdown: >-
+          https://raw.githubusercontent.com/lowlighter/metrics/master/source/templates/markdown/example.pdf.md
+        config_twemoji: true
+        config_padding: 5%
+    ```
+
+    **EJS templating syntax:**
+
+    | Syntax | Purpose |
+    |--------|---------|
+    | `{{ value }}` or `<%= value %>` | Output escaped value |
+    | `<%- value %>` | Output raw/unescaped value |
+    | `<% code %>` | Execute JavaScript (conditionals, loops) |
+
+    ```markdown EJS template example
+    I joined GitHub on `{{ f.date(REGISTRATION_DATE, {date:true}) }}`.
+    I contributed to `{{ REPOSITORIES_CONTRIBUTED_TO }}` repositories.
+
+    <%- await include(`partials/languages.ejs`) %>
+    ```
+
+    <Warning>
+      Data schemas may change between metrics versions without notice. Pin to a specific version or use a fork when relying on the Markdown template for critical workflows.
+    </Warning>
+  </Tab>
+</Tabs>
+
+---
+
+## Community templates
+
+Community templates let you use templates from external repositories while still using the official `lowlighter/metrics` release.
+
+<ParamField path="setup_community_templates" type="string">
+  Comma-separated list of community templates to download before rendering. Each entry uses the format:
+
+  ```
+  user/repo@branch:template-name
+  ```
+
+  Downloaded templates are available by prefixing their name with `@`.
+</ParamField>
+
+```yaml Using a community template
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    template: "@my-theme"
+    setup_community_templates: "user/repo@main:my-theme"
+```
+
+### Trust levels
+
+For security reasons, community templates run using the `classic` template's `template.mjs` by default, even if the community template provides its own. This prevents remote code execution from untrusted sources.
+
+To allow a community template to use its own JavaScript, append `+trust` to the template entry:
+
+```yaml Trusting a community template
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    template: "@my-theme"
+    setup_community_templates: "user/repo@main:my-theme+trust"
+```
+
+<Warning>
+  Trusting a community template grants it the ability to execute arbitrary code with access to your token and other secrets. Only trust templates from sources you control or have thoroughly reviewed. Template content may change at any time.
+</Warning>
+
+### Passing parameters to community templates
+
+Some community templates accept custom parameters via the `query` option. Pass a JSON string:
+
+<ParamField path="query" type="string">
+  JSON-formatted string of additional parameters passed to the template. Used primarily with community templates that expose custom configuration options.
+</ParamField>
+
+```yaml Community template with custom parameters
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    template: "@my-theme"
+    setup_community_templates: "user/repo@main:my-theme+trust"
+    query: |
+      {
+        "header_color": "#FF0000",
+        "show_avatar": true
+      }
+```
+
+---
+
+## Template customization
+
+### Custom CSS
+
+<ParamField path="extras_css" type="string">
+  Additional CSS to inject into the rendered output. Applied after the template's own styles, allowing selective overrides of colors, fonts, spacing, and other visual properties.
+
+  This option requires the `metrics.run.puppeteer.user.css` extra feature to be enabled on the instance.
+</ParamField>
+
+```yaml Injecting custom CSS
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    extras_css: |
+      :root {
+        --color-text-primary: #58a6ff;
+      }
+      h2 {
+        font-size: 1.2em;
+      }
+```
+
+### Custom JavaScript
+
+<ParamField path="extras_js" type="string">
+  JavaScript to execute inside the headless browser after the SVG has been rendered. Allows DOM manipulation and dynamic modifications to the output before it is captured.
+
+  This option requires the `metrics.run.puppeteer.user.js` extra feature to be enabled on the instance.
+</ParamField>
+
+```yaml Injecting custom JavaScript
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    extras_js: |
+      document.querySelectorAll('.plugin').forEach(el => {
+        el.style.borderRadius = '12px'
+      })
+```
+
+<Warning>
+  `extras_css` and `extras_js` allow arbitrary code execution in the rendering environment. These options are disabled by default on hosted instances and must be explicitly enabled.
+</Warning>
+
+---
+
+## Configuration presets
+
+<ParamField path="config_presets" type="string" default="">
+  Comma-separated list of configuration presets to apply before other options. A preset is a YAML file containing a set of option defaults.
+
+  Presets can be referenced by name (for built-in presets) or by remote URL (for community presets). Options specified directly in the workflow override values from presets.
+</ParamField>
+
+```yaml Using a configuration preset
+- uses: lowlighter/metrics@latest
+  with:
+    token: ${{ secrets.METRICS_TOKEN }}
+    config_presets: >-
+      https://raw.githubusercontent.com/user/repo/main/my-preset.yml
+```
+
+A preset file is a YAML file containing metrics options as key-value pairs:
+
+```yaml my-preset.yml
+config_timezone: America/New_York
+config_twemoji: yes
+config_animations: yes
+config_base64: yes
+config_display: large
+```
+
+<Tip>
+  Use presets to share a consistent base configuration across multiple workflows or repositories without duplicating options in every workflow file.
+</Tip>
+
+---
+
+## Choosing a template
+
+<CardGroup cols={2}>
+  <Card title="Classic" icon="table-columns">
+    Default template. Best plugin coverage. Use for user and organization profiles.
+  </Card>
+  <Card title="Repository" icon="code-branch">
+    Scoped to a single repository. Use for per-repo dashboards with contributor and code stats.
+  </Card>
+  <Card title="Terminal" icon="terminal">
+    SSH-style aesthetic. Use for a minimal, code-focused profile style.
+  </Card>
+  <Card title="Markdown" icon="file-lines">
+    Outputs Markdown instead of an image. Use for rich, dynamic README content with full text control.
+  </Card>
+</CardGroup>

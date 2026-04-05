@@ -1,0 +1,97 @@
+---
+title: "Featured repositories"
+description: "Highlight pinned or hand-picked repositories in your metrics"
+---
+
+The repositories plugin displays a list of chosen repositories as cards inside your metrics. You can feature specific repositories by name, pull from your GitHub pinned repositories, highlight your most-starred repos, or include a random selection.
+
+Enable the plugin with:
+
+```yaml
+plugin_repositories: yes
+```
+
+<Note>
+  Because SVG images inside `<img>` tags do not support interaction, clicking a repository card in a rendered metrics image will not navigate to the repository page.
+</Note>
+
+## Options
+
+<ParamField path="plugin_repositories_featured" type="string">
+  Comma-separated list of specific repositories to feature, in `owner/repo` format. When no owner is specified, the current user is assumed. This option cannot be used as a preset.
+</ParamField>
+
+<ParamField path="plugin_repositories_pinned" type="number">
+  Number of pinned repositories to include (0–6). GitHub allows up to 6 pinned repos per profile. Default: `0`.
+</ParamField>
+
+<ParamField path="plugin_repositories_starred" type="number">
+  Number of your most-starred repositories to include (0–100). The repositories pool is determined by `plugin_repositories_affiliations`. Default: `0`.
+</ParamField>
+
+<ParamField path="plugin_repositories_random" type="number">
+  Number of randomly selected repositories to include (0–100). The repositories pool is determined by `plugin_repositories_affiliations`. Default: `0`.
+</ParamField>
+
+<ParamField path="plugin_repositories_order" type="string">
+  Display order of repository groups. Accepted values: `featured`, `pinned`, `starred`, `random`. Default: `featured, pinned, starred, random`.
+</ParamField>
+
+<ParamField path="plugin_repositories_forks" type="boolean">
+  Include forked repositories when selecting pinned, starred, or random repos. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_repositories_affiliations" type="string">
+  Comma-separated list of affiliations used to determine the pool of repositories for the `starred` and `random` options. Accepted values:
+  - `owner` — repositories you own
+  - `collaborator` — repositories you have push access to
+  - `organization_member` — repositories in organizations where you are a member
+
+  Set to `""` to fetch all repositories associated with the account. Default: `owner`.
+</ParamField>
+
+## Workflow examples
+
+Feature specific repositories by name:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.repositories.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_repositories: yes
+    plugin_repositories_featured: lowlighter/metrics, torvalds/linux
+```
+
+Display pinned repositories from your profile:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.repositories.pinned.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_repositories: yes
+    plugin_repositories_pinned: 4
+```
+
+Combine featured, pinned, and top-starred repositories:
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.repositories.combined.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_repositories: yes
+    plugin_repositories_featured: lowlighter/metrics
+    plugin_repositories_pinned: 2
+    plugin_repositories_starred: 3
+    plugin_repositories_order: featured, pinned, starred
+    plugin_repositories_affiliations: owner, collaborator
+```
+
+<Tip>
+  Since GitHub already provides a pinned repositories section on profile pages, this plugin is most useful when embedding metrics in external contexts such as repository READMEs or personal websites.
+</Tip>

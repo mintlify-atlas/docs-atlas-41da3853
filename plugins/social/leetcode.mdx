@@ -1,0 +1,70 @@
+---
+title: "LeetCode"
+description: "Show your LeetCode problem-solving stats"
+keywords: ["leetcode", "coding challenges", "problem solving", "algorithm", "competitive programming"]
+---
+
+The LeetCode plugin displays statistics from a public [LeetCode](https://leetcode.com) account, including solved problem counts by difficulty, skill tags, and recent submissions.
+
+Enable the plugin by adding `plugin_leetcode: true` to your workflow.
+
+<Note>
+No API token is required. This plugin uses publicly available LeetCode profile data.
+</Note>
+
+## Options
+
+<ParamField path="plugin_leetcode_user" type="string" required>
+  Your LeetCode username. Defaults to your GitHub login if not specified.
+</ParamField>
+
+<ParamField path="plugin_leetcode_sections" type="string">
+  Comma-separated list of sections to display. Defaults to `solved`. Allowed values: `solved`, `skills`, `recent`.
+
+  - `solved` — counts of solved problems by difficulty (Easy, Medium, Hard)
+  - `skills` — skill tags derived from solved problems
+  - `recent` — recent problem submissions
+</ParamField>
+
+<ParamField path="plugin_leetcode_limit_skills" type="number">
+  Maximum number of skill tags to display. Defaults to `10`. Set to `0` to disable the limit.
+
+  You can also ignore entire skill categories by passing `fundamental`, `intermediate`, or `advanced` to `plugin_leetcode_ignored_skills`.
+</ParamField>
+
+<ParamField path="plugin_leetcode_ignored_skills" type="string">
+  Comma-separated list of specific skills or skill categories to hide. Pass `fundamental`, `intermediate`, or `advanced` to exclude an entire category.
+</ParamField>
+
+<ParamField path="plugin_leetcode_limit_recent" type="number">
+  Maximum number of recent submissions to display. Defaults to `2`. Accepted range: 1–15.
+</ParamField>
+
+## Example workflow
+
+```yaml
+name: LeetCode metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          filename: metrics.plugin.leetcode.svg
+          token: NOT_NEEDED
+          base: ""
+          plugin_leetcode: yes
+          plugin_leetcode_user: your-leetcode-username
+          plugin_leetcode_sections: solved, skills, recent
+          plugin_leetcode_limit_skills: 10
+          plugin_leetcode_limit_recent: 2
+```
+
+<Tip>
+The `solved` section is the most compact option and works well when combining the LeetCode plugin with other plugins on the same metrics card.
+</Tip>

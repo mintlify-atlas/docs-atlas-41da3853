@@ -1,0 +1,93 @@
+---
+title: "Recent activity"
+description: "Show recent GitHub events and contributions"
+---
+
+The activity plugin displays a feed of recent GitHub events for a user, organization, or repository. It draws from the [GitHub events API](https://docs.github.com/en/free-pro-team@latest/developers/webhooks-and-events/github-event-types) and supports filtering by event type, age, and visibility.
+
+Enable the plugin with:
+
+```yaml
+plugin_activity: yes
+```
+
+## Options
+
+<ParamField path="plugin_activity_limit" type="number">
+  Number of events to display in the output (1–1000). Default: `5`.
+</ParamField>
+
+<ParamField path="plugin_activity_load" type="number">
+  Number of events to fetch from the API before filtering (100–1000). Load more events to ensure enough pass through the age and type filters. Default: `300`.
+</ParamField>
+
+<ParamField path="plugin_activity_days" type="number">
+  Maximum age of events in days (0–365). Events older than this value are excluded. Set to `0` to disable the age filter and include all loaded events. Default: `14`.
+</ParamField>
+
+<ParamField path="plugin_activity_visibility" type="string">
+  Controls whether private activity is included. Accepted values:
+  - `public` — only show public events
+  - `all` — include private events (requires a token with `repo` scope)
+
+  Default: `all`.
+</ParamField>
+
+<ParamField path="plugin_activity_timestamps" type="boolean">
+  Show timestamps alongside each event. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_activity_skipped" type="string">
+  Newline-separated list of repositories to exclude from the activity feed. Inherits from `repositories_skipped`.
+</ParamField>
+
+<ParamField path="plugin_activity_ignored" type="string">
+  Comma-separated list of users to ignore. Useful for filtering out bot activity. Inherits from `users_ignored`.
+</ParamField>
+
+<ParamField path="plugin_activity_filter" type="string">
+  Comma-separated list of event types to include. Use `all` to show every supported type. Accepted values:
+
+  | Value | Description |
+  |---|---|
+  | `push` | Commit pushes |
+  | `issue` | Issue opened, reopened, or closed |
+  | `pr` | Pull request opened or closed |
+  | `comment` | Comments on commits, issues, and pull requests |
+  | `review` | Pull request reviews |
+  | `ref/create` | Git branch or tag created |
+  | `ref/delete` | Git branch or tag deleted |
+  | `release` | New release published |
+  | `wiki` | Wiki page changes |
+  | `fork` | Repository forked |
+  | `star` | Repository starred |
+  | `member` | Collaborator added to a repository |
+  | `public` | Repository made public |
+
+  Default: `all`.
+</ParamField>
+
+## Workflow example
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    filename: metrics.plugin.activity.svg
+    token: ${{ secrets.METRICS_TOKEN }}
+    base: ""
+    plugin_activity: yes
+    plugin_activity_limit: 5
+    plugin_activity_load: 300
+    plugin_activity_days: 0
+    plugin_activity_visibility: all
+    plugin_activity_timestamps: yes
+    plugin_activity_filter: issue, pr, release, fork, review, ref/create
+```
+
+<Tip>
+  Set `plugin_activity_days: 0` to ignore event age and always fill the display up to `plugin_activity_limit`, regardless of how long ago the events occurred.
+</Tip>
+
+<Note>
+  The GitHub events API only retains events for a limited time window. If the API has fewer events available than `plugin_activity_load`, the plugin will use whatever is available.
+</Note>

@@ -1,0 +1,64 @@
+---
+title: "Introduction"
+description: "Metrics is a GitHub profile infographics generator that creates SVG, PNG, Markdown, and JSON outputs from your GitHub data."
+keywords: ["metrics", "github", "infographics", "svg", "profile", "readme", "plugins"]
+---
+
+Metrics generates rich infographic images from GitHub data that you can embed anywhere — your profile README, blog posts, or documentation sites. It supports user accounts, organization accounts, and individual repositories.
+
+<Note>
+  Most features require a GitHub Personal Access Token with appropriate scopes. The exact scopes depend on which plugins you enable. A token with `read:user` and `repo` scopes covers the most common use cases.
+</Note>
+
+## What Metrics generates
+
+Metrics pulls data from GitHub's REST and GraphQL APIs and renders it as a self-contained image. The image is generated server-side, so it always reflects your latest GitHub activity when refreshed.
+
+**User metrics** show profile-level data: contribution activity, language breakdown, achievements, starred repositories, coding habits, and more.
+
+**Organization metrics** show org-level data: members, repository activity, contribution summaries, and team insights.
+
+**Repository metrics** show per-repo data: contributor lists, license information, traffic stats, follow-up on issues and pull requests.
+
+## Output formats
+
+Metrics can render its output in multiple formats:
+
+| Format | Description |
+|--------|-------------|
+| SVG | Default format. Fully self-contained, animatable, and scales to any size. |
+| PNG | Rasterized screenshot of the SVG, suitable for environments that don't support SVG. |
+| Markdown | Rendered markdown with embedded images, useful for Markdown templates. |
+| JSON | Raw data output for programmatic use. |
+
+## Plugins and options
+
+Metrics ships with **47 plugins** and over **335 configuration options**. Plugins cover a wide range of data sources:
+
+- **GitHub data**: commit calendars, language stats, achievements, stargazers, topics, discussions, sponsors, and more
+- **Third-party integrations**: WakaTime, Anilist, Last.fm, Stack Overflow, Leetcode, and others
+- **Community plugins**: maintained by contributors, covering chess, crypto, stock prices, and more
+
+Each plugin is independently enabled and configured. You only pay the API cost for plugins you use.
+
+## Deployment modes
+
+<CardGroup cols={2}>
+  <Card title="GitHub Action" icon="github" href="/setup/github-action">
+    Run Metrics on a schedule directly in your GitHub repository. The generated image is committed back to your repo automatically. This is the recommended approach — it supports all features and requires no infrastructure.
+  </Card>
+  <Card title="Web instance" icon="server" href="/setup/web-instance">
+    Self-host Metrics as a web server using Docker. Generates metrics on demand via HTTP requests. Suitable for teams or individuals who want to serve metrics for multiple users from a single host.
+  </Card>
+</CardGroup>
+
+## Getting started
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get a working metrics image embedded in your profile README in about 5 minutes.
+  </Card>
+  <Card title="GitHub Action setup" icon="gear" href="/setup/github-action">
+    Full reference for configuring Metrics as a GitHub Action, including all key inputs and workflow examples.
+  </Card>
+</CardGroup>

@@ -1,0 +1,85 @@
+---
+title: "Stack Overflow"
+description: "Display Stack Overflow reputation and top answers"
+keywords: ["stackoverflow", "reputation", "answers", "questions", "developer community"]
+---
+
+The Stack Overflow plugin displays stats, questions, and answers from a [Stack Overflow](https://stackoverflow.com) profile, including your most popular answers and recent activity.
+
+Enable the plugin by adding `plugin_stackoverflow: true` to your workflow.
+
+<Note>
+No API token is required. This plugin uses the public Stack Exchange API.
+</Note>
+
+## Finding your Stack Overflow user ID
+
+Your user ID is the number in your Stack Overflow profile URL. For example, if your profile URL is `https://stackoverflow.com/users/1234567/username`, your user ID is `1234567`.
+
+<Steps>
+  <Step title="Visit your profile">
+    Log in to [stackoverflow.com](https://stackoverflow.com) and click your avatar to go to your profile.
+  </Step>
+  <Step title="Copy the ID from the URL">
+    The numeric segment in the URL is your user ID: `https://stackoverflow.com/users/YOUR_ID/your-username`.
+  </Step>
+</Steps>
+
+## Options
+
+<ParamField path="plugin_stackoverflow_user" type="number" required>
+  Your Stack Overflow numeric user ID. This is required — the plugin cannot auto-detect your account.
+</ParamField>
+
+<ParamField path="plugin_stackoverflow_sections" type="string">
+  Comma-separated list of sections to display. Defaults to `answers-top, questions-recent`. Allowed values:
+
+  - `answers-top` — most popular (highest-voted) answers
+  - `answers-recent` — most recently posted answers
+  - `questions-top` — most popular questions
+  - `questions-recent` — most recently posted questions
+</ParamField>
+
+<ParamField path="plugin_stackoverflow_limit" type="number">
+  Maximum number of entries to display per section. Defaults to `2`. Accepted range: 1–30.
+</ParamField>
+
+<ParamField path="plugin_stackoverflow_lines" type="number">
+  Maximum number of lines to show per question or answer body. Defaults to `4`. Set to `0` to disable truncation.
+
+  Code snippets count as a single line and are controlled separately by `plugin_stackoverflow_lines_snippet`.
+</ParamField>
+
+<ParamField path="plugin_stackoverflow_lines_snippet" type="number">
+  Maximum number of lines to show per code snippet within a question or answer. Defaults to `2`. Set to `0` to disable truncation.
+</ParamField>
+
+## Example workflow
+
+```yaml
+name: Stack Overflow metrics
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          filename: metrics.plugin.stackoverflow.svg
+          token: NOT_NEEDED
+          base: ""
+          plugin_stackoverflow: yes
+          plugin_stackoverflow_user: 1234567
+          plugin_stackoverflow_sections: answers-top, questions-recent
+          plugin_stackoverflow_limit: 2
+          plugin_stackoverflow_lines: 4
+          plugin_stackoverflow_lines_snippet: 2
+```
+
+<Tip>
+Use `answers-top` to highlight your most impactful contributions, or combine it with `questions-recent` to show both past expertise and ongoing engagement.
+</Tip>

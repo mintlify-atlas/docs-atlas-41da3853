@@ -1,0 +1,163 @@
+---
+title: "Languages activity"
+description: "Display programming language usage across your repositories"
+---
+
+The languages plugin shows which programming languages you use across your GitHub repositories. It supports three analysis modes: a fast default mode using the GitHub API, an accurate indepth mode that clones repositories locally, and a recently-used mode based on your push event feed.
+
+Enable the plugin with:
+
+```yaml
+plugin_languages: yes
+```
+
+## Options
+
+<ParamField path="plugin_languages_ignored" type="string">
+  Comma-separated list of languages to exclude from results entirely. Useful for hiding markup or tooling languages like HTML, CSS, or Dockerfile.
+</ParamField>
+
+<ParamField path="plugin_languages_skipped" type="string">
+  Newline-separated list of repositories to exclude from analysis. Inherits from `repositories_skipped`.
+</ParamField>
+
+<ParamField path="plugin_languages_limit" type="number">
+  Maximum number of languages to display (0–8). Set to `0` to disable the limit. Default: `8`.
+</ParamField>
+
+<ParamField path="plugin_languages_threshold" type="string">
+  Minimum usage percentage required for a language to appear. Languages below this threshold are hidden. Remaining languages are automatically rescaled to 100%. Default: `0%`.
+</ParamField>
+
+<ParamField path="plugin_languages_other" type="boolean">
+  Group languages that are ignored, unknown, or over the display limit into an "Other" category. The "Other" category is hidden automatically when empty and is not subject to the threshold filter. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_languages_colors" type="string">
+  Comma-separated list of custom color overrides. Supports:
+  - A predefined color set name (e.g. `rainbow`) from `colorsets.json`
+  - `language:color` to set a specific language's color (e.g. `javascript:red`)
+  - `n:color` to set the nth language's color (e.g. `0:blue`)
+
+  Both hex values and named CSS colors are accepted. Default: `github`.
+</ParamField>
+
+<ParamField path="plugin_languages_aliases" type="string">
+  Space-separated list of language name overrides using `language:alias` syntax (case-insensitive). Useful when linguist mislabels a language.
+</ParamField>
+
+<ParamField path="plugin_languages_sections" type="string">
+  Comma-separated list of sections to display. Accepted values: `most-used`, `recently-used`. The `recently-used` section analyzes your recent push event feed rather than repository language stats. Default: `most-used`.
+</ParamField>
+
+<ParamField path="plugin_languages_details" type="string">
+  Comma-separated list of additional details to show per language. Accepted values: `bytes-size`, `percentage`, `lines`. The `lines` option requires `plugin_languages_indepth: yes`.
+</ParamField>
+
+<ParamField path="plugin_languages_indepth" type="boolean">
+  Enable indepth analysis mode. Repositories are cloned locally and analyzed using linguist-js for more accurate language attribution. Significantly increases workflow runtime. Defaults to `false`.
+</ParamField>
+
+<ParamField path="plugin_languages_indepth_custom" type="string">
+  Comma-separated list of additional repositories to include in indepth analysis. Supported formats:
+  - `owner/repo`
+  - `owner/repo@branch`
+  - `owner/repo@branch:commits` (uses `git rev-list` range syntax)
+  - Full URL for non-GitHub repositories
+
+  This option bypasses `plugin_languages_skipped`.
+</ParamField>
+
+<ParamField path="plugin_languages_analysis_timeout" type="number">
+  Maximum time in minutes for the entire indepth analysis (1–60). Default: `15`.
+</ParamField>
+
+<ParamField path="plugin_languages_analysis_timeout_repositories" type="number">
+  Maximum time in minutes spent analyzing a single repository during indepth mode (0–15). Set to `0` to disable the per-repository limit. Default: `7.5`.
+</ParamField>
+
+<ParamField path="plugin_languages_categories" type="string">
+  Comma-separated list of language categories shown in the most-used section during indepth mode. Accepted values: `data`, `markup`, `programming`, `prose`. Default: `markup, programming`.
+</ParamField>
+
+<ParamField path="plugin_languages_recent_categories" type="string">
+  Comma-separated list of language categories shown in the recently-used section during indepth mode. Accepted values: `data`, `markup`, `programming`, `prose`. Default: `markup, programming`.
+</ParamField>
+
+<ParamField path="plugin_languages_recent_load" type="number">
+  Number of push events to load for the recently-used section (100–1000). Default: `300`.
+</ParamField>
+
+<ParamField path="plugin_languages_recent_days" type="number">
+  Maximum age in days of events considered for the recently-used section (0–365). Set to `0` to disable the age filter. Default: `14`.
+</ParamField>
+
+## Workflow examples
+
+<Tabs>
+  <Tab title="Default mode">
+    Uses the GitHub GraphQL API to determine top languages per repository. Fast, but may be less representative for collaborative projects.
+
+    ```yaml
+    - uses: lowlighter/metrics@latest
+      with:
+        filename: metrics.plugin.languages.svg
+        token: ${{ secrets.METRICS_TOKEN }}
+        base: ""
+        plugin_languages: yes
+        plugin_languages_ignored: >-
+          html, css, tex, less, dockerfile, makefile, qmake, lex, cmake, shell,
+          gnuplot
+        plugin_languages_details: bytes-size, percentage
+        plugin_languages_limit: 4
+    ```
+  </Tab>
+  <Tab title="Indepth mode">
+    Clones each repository and attributes lines of code to you by matching commits against `commits_authoring`. More accurate but significantly slower.
+
+    ```yaml
+    - uses: lowlighter/metrics@latest
+      with:
+        filename: metrics.plugin.languages.indepth.svg
+        token: ${{ secrets.METRICS_TOKEN }}
+        base: ""
+        plugin_languages: yes
+        plugin_languages_ignored: >-
+          html, css, tex, less, dockerfile, makefile, qmake, lex, cmake, shell,
+          gnuplot
+        plugin_languages_indepth: yes
+        plugin_languages_details: lines, bytes-size
+        plugin_languages_limit: 4
+        plugin_languages_analysis_timeout: 15
+        commits_authoring: firstname lastname, username, username@users.noreply.github.com
+    ```
+  </Tab>
+  <Tab title="Recently used">
+    Analyzes your recent push event feed to show languages you have been actively working with.
+
+    ```yaml
+    - uses: lowlighter/metrics@latest
+      with:
+        filename: metrics.plugin.languages.recent.svg
+        token: ${{ secrets.METRICS_TOKEN }}
+        base: ""
+        plugin_languages: yes
+        plugin_languages_ignored: >-
+          html, css, tex, less, dockerfile, makefile, qmake, lex, cmake, shell,
+          gnuplot
+        plugin_languages_sections: recently-used
+        plugin_languages_details: bytes-size, percentage
+        plugin_languages_recent_load: 400
+        plugin_languages_recent_days: 14
+        plugin_languages_limit: 4
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  Indepth mode clones repositories onto the GitHub Actions runner. Do not enable it for repositories containing sensitive or proprietary code. The `plugin_languages_analysis_timeout` and `plugin_languages_analysis_timeout_repositories` limits exist to avoid excessive GitHub resource consumption — set them conservatively.
+</Warning>
+
+<Note>
+  On web instances, indepth mode requires `metrics.cpu.overuse`, `metrics.run.tempdir`, and `metrics.run.git` to be enabled in `settings.json`.
+</Note>
